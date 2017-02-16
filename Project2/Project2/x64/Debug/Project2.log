@@ -1,0 +1,6 @@
+﻿  MyForm.cpp
+  Source.cpp
+  Создание кода...
+  MyForm.obj : /DEBUG:FASTLINK не поддерживается, если присутствует управляемый код; выполняется перезапуск компоновки с /DEBUG:FULL
+  Project2.vcxproj -> C:\Projects\с++\mySmallChest\Project2\x64\Debug\Project2.exe
+  Project2.vcxproj -> C:\Projects\с++\mySmallChest\Project2\x64\Debug\Project2.pdb (Partial PDB)

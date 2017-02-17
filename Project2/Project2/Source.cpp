@@ -67,15 +67,21 @@ int arrPoleComp[5][5];
 vector<int> vCards;
 int currentCard;
 //////////////////////////////////////////////////////////////////////////////////////////////////
-/*Пользователь записывает номер в ячейку (счёт nCol и nRow ведётся с единицы)*/
-//bool WriteCardIntoUserCell(int nCol, int nRow);
+
+/*Для компа*/
+int  AICountFreeCells(int xCol, int yRow);
+void AI(int *nCol, int *nRow);
+void stepAI();
 
 /*Для карт*/
-//void ReCreateCards();
-int score(int numbers[5], bool bDiagonal);
-int totalScore(int pole[5][5]);
+void recreateStackCards();
+int  score(int numbers[5], bool bDiagonal);
+int  totalScore(int pole[5][5]);
+int  nextCard();
+bool writeCardIntoCompCell(int nCol, int nRow);
+bool writeCardIntoUserCell(int nCol, int nRow); //Пользователь записывает номер в ячейку (счёт nCol и nRow ведётся с единицы)
 
-/*Проверка на 4 единицы*/
+												/*Проверка на 4 единицы*/
 bool checkForOnce(const int *numbers);
 
 /*Проверка на  1, 13, 12, 11 и 10*/
@@ -90,22 +96,19 @@ bool checkSerialNum(const int *numbers);
 /*Проверка на одинаковые числа*/
 bool checkIdenticalNum(const int *numbers, int n1 = 4, int n2 = 0);
 
-//////////////////////////////////////////////////////////////////////////////////////////////////
-////НА РАСПРЕДЕЛЕНИЕ//////////////////////НА РАСПРЕДЕЛЕНИЕ////////////////////НА РАСПРЕДЕЛЕНИЕ////
+/*Тригеры начала и конца игры*/
 void newGame();
-void recreateStackCards();
-int  nextCard();
-void stepAI();
 void endGame();
-////НА РАСПРЕДЕЛЕНИЕ//////////////////////НА РАСПРЕДЕЛЕНИЕ////////////////////НА РАСПРЕДЕЛЕНИЕ////
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct stuctMax {
+struct structMax {
 	int maxX;
 	int maxY;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
+
 int main() {
 	setlocale(0, "");
 	/*Тестовый массив на 570*/
@@ -120,6 +123,7 @@ int main() {
 	return 0;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
+
 int totalScore(int Pole[5][5]) {
 	int totalScore = 0;
 
@@ -155,6 +159,7 @@ int totalScore(int Pole[5][5]) {
 	return totalScore;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
+
 int score(int numbers[5], bool bDiagonal) {
 	sort(numbers, numbers + 5);
 
@@ -179,6 +184,7 @@ int score(int numbers[5], bool bDiagonal) {
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /*Проверка на 4 единицы*/
+
 bool checkForOnce(const int *numbers) {
 	int arr[] = { 1,1,1,1 };
 	if (memcmp(numbers, arr, sizeof(arr)) == 0 ||
@@ -237,14 +243,15 @@ bool checkIdenticalNum(const int *numbers, int n1, int n2) {
 	return false;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
-
+//////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////
 void newGame() {
 	memset(arrPoleUser, 0, sizeof(arrPoleUser));
 	memset(arrPoleComp, 0, sizeof(arrPoleComp));
 	recreateStackCards();
 	isGame = true;
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////
 void recreateStackCards() {
 
 	vCards.clear();
@@ -257,7 +264,7 @@ void recreateStackCards() {
 
 	vCards.resize(25);
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////
 int nextCard() {
 	if (!isGame) return 0;
 
@@ -273,23 +280,121 @@ int nextCard() {
 
 	return currentCard;
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////
 void stepAI() {
 	if (!isGame) return; //return NULL не срабатывает, я удивлён
 	int row, col;
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////
 void endGame() {
-
 	int userScores = totalScore(arrPoleUser);
 	int compScores = totalScore(arrPoleComp);
-
 	isGame = false;
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 *	В процессе здесь появится простой ИИ
 *	который на каждом шагу будет ставить число в ячейку, при которой будет наибольшее суммарное кол-во очков на данном шаге.
 *	Ячейка должна лежать не на диагонали и вокруг ячейки должно быть больше свободных клеток, чем на других просмотренных ячейках.
 *	Диагонали имеют самый низкий приоритет при рассмотрении ситуации ИИ.
 */
+//////////////////////////////////////////////////////////////////////////////////////////////////
+void AI(int *nCol, int *nRow) {
+	int numbers[5];
+
+	int iMaxTotalScores = 0;
+	vector<structMax> vMax;
+
+	for (int x = 0; x < 5; x++) {
+		for (int y = 0; y < 5; y++) {
+			if (arrPoleComp[x][y] == 0) {
+				arrPoleComp[x][y] = currentCard;
+				int iScores = totalScore(arrPoleComp);
+				if (iMaxTotalScores <= iScores) {
+					if (iMaxTotalScores < iScores) {
+						vMax.clear();
+						iMaxTotalScores = iScores;
+					}
+
+					structMax max;
+					max.maxX = x;
+					max.maxY = y;
+
+					vMax.push_back(max);
+
+				}
+				arrPoleComp[x][y] = 0;
+			}
+		}
+	}
+
+	int iMaxFreeCells = 0;
+	int iMaxX = 0;
+	int iMaxY = 0;
+
+	for (int i = 0; i < vMax.size(); i++) {
+		structMax max = vMax[i];
+
+		int count = AICountFreeCells(max.maxX, max.maxY);
+		if (iMaxFreeCells <= count) {
+			iMaxFreeCells = count;
+			iMaxX = max.maxX;
+			iMaxY = max.maxY;
+		}
+	}
+
+	*nCol = iMaxX + 1;
+	*nRow = iMaxY + 1;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////
+int AICountFreeCells(int xCol, int yRow) {
+
+	int Count = 0;
+
+	if (xCol == 2 && yRow == 2) return 999;
+	/*Диагональ желательно пропускать*/
+	if (xCol - yRow == 0 || xCol + yRow == 4) return 0;
+
+	for (int x = 0; x < 5; x++) {
+		for (int y = 0; y < 5; y++) {
+			if (arrPoleComp[x][yRow] == 0) Count++;
+			if (arrPoleComp[xCol][y] == 0) Count++;
+			if (arrPoleComp[x][y] == 0) Count++;
+			if (arrPoleComp[4 - x][y] == 0) Count++;
+		}
+	}
+	return Count;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////
+bool writeCardIntoCompCell(int nCol, int nRow) {
+	/*Из-за того, что счёт в массивах начинается с нуля*/
+	nCol--;
+	nRow--;
+
+	/*Если ячейка занята*/
+	if (arrPoleComp[nCol][nRow]) return false;
+	/*Если ячейка свободна*/
+	else {
+		arrPoleComp[nCol][nRow] = currentCard;
+	}
+
+	return true;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////
+bool writeCardIntoUserCell(int nCol, int nRow) {
+	if (!isGame) return false;
+
+	/*Из-за того, что счёт в массивах начинается с нуля*/
+	nCol--;
+	nRow--;
+
+	/*Если ячейка занята*/
+	if (arrPoleUser[nCol][nRow]) return false;
+	/*Если ячейка свободна*/
+	else {
+		arrPoleUser[nCol][nRow] = currentCard;
+	}
+
+	return true;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////
